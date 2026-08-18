@@ -1,0 +1,33 @@
+Planning and Organisation 
+
+1. Collaboration & Workflow Plan 
+
+Our Collaboration & Workflow Plan is maintained in our GitHub repository. We also use Microsoft Teams chat for ongoing group communication and coordination. 
+
+2. Task Tracking 
+
+We use GitHub Issues to assign and track tasks. We chose it because it integrates directly with our repository and provides a simple way to assign responsibilities and monitor progress. All group members have previous experience using GitHub. 
+
+Language and Tooling 
+
+3. Language Choice 
+
+We have chosen Python. Everyone in the group is familiar with Python, and overall the team has more experience with Python than Java. 
+
+Our top three factors were: 
+
+Familiarity with the language  
+
+Team members’ experience  
+
+Library support  
+
+Python should allow us to develop and debug the application quickly and gives us access to a large range of libraries. A possible disadvantage is that Python has lower performance than Java in some situations and its dynamic typing can make some errors harder to catch early. 
+
+If we had to use Java, the main difficulty would be getting everyone equally comfortable with the language and its more verbose development process. Java's static typing and compile-time checking could, however, make some errors easier to identify. 
+
+ 
+
+4. Build/Dependency Management Tool 
+
+We plan to use uv for Python dependency and environment management. This will be the group's first time setting up a project with uv. We chose it because we found out it is lightweight, fast, and provides a straightforward way to manage dependencies and virtual environments. 
