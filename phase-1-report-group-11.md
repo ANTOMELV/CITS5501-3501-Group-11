@@ -1,7 +1,7 @@
 ---
-title: "CITS5501 Project -- Phase 1"
-author: "Group 11"
-date: August 2025
+Title: "CITS5501 Project -- Phase 1"
+Author: "Group 11"
+Date: 20 August 2025
 ---
 
 # Phase 1 - Project Report
