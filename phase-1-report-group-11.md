@@ -8,7 +8,6 @@ Date: 20 August 2025
 
 **CITS5501/3501 | Software Testing and Quality Assurance | Group 11**
 
-**Lab Facilitator:** [Name]
 
 ## Team Members
 
