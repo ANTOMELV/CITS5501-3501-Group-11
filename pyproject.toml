@@ -9,16 +9,16 @@ dependencies = [
     "requests>=2.34.2",
 ]
 
-[build-system]
-requires = ["uv_build>=0.9.11,<0.10.0"]
-build-backend = "uv_build"
+# A single script (scraper.py), not an installable package.
+[tool.uv]
+package = false
 
 # Default rule set for now (Phase 1, Q12); target version comes from requires-python.
 [tool.ruff]
 
 [tool.mypy]
 python_version = "3.10"
-files = ["src"]
+files = ["scraper.py"]
 
 [dependency-groups]
 dev = [
