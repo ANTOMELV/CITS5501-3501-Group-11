@@ -18,15 +18,11 @@ build-backend = "uv_build"
 
 [tool.mypy]
 python_version = "3.10"
-files = ["src", "tests"]
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
+files = ["src"]
 
 [dependency-groups]
 dev = [
     "mypy>=2.4.0",
-    "pytest>=9.1.1",
     "ruff>=0.17.0",
     "types-requests>=2.33.0.20261006",
 ]

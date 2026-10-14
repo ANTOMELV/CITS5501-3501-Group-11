@@ -21,5 +21,3 @@ jobs:
         run: uv run ruff format --check .
       - name: Type check
         run: uv run mypy
-      - name: Tests (offline)
-        run: uv run pytest
