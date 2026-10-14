@@ -1,8 +1,12 @@
 # Task 1 prototype: notes for the report
 
-Sources: `src/policy_scraper/prototype.py` (commit 2978030), the site recon from
-14 Oct 2026, which made one request to the index page, and one live run with
-default options at 2026-10-13 18:54 UTC (14 Oct, 02:54 Perth time).
+Sources: `scraper.py` (built on the unit's starter code), the site recon from
+14 Oct 2026, which made one request to the index page, and two live runs with
+default options: one at 2026-10-13 18:54 UTC with an earlier version of the
+code, and one at 2026-10-14 16:35 UTC (15 Oct, 00:35 Perth time) with the
+current `scraper.py`. Both runs chose the same five documents and got the same
+statuses, types, sizes and first bytes. Figures below are from the second run
+unless stated.
 
 ## 1. What it does
 
@@ -11,41 +15,49 @@ The prototype fetches one index page, by default
 links that, once resolved against the page's final URL, are http(s) links on
 the same hostname whose path ends in pdf, doc, docx, rtf, odt, ppt, pptx, xls
 or xlsx, with fragments removed and duplicates dropped. It then selects
-`--count` documents (default 5): the first link of each extension in page
-order, then round-robin across extensions. Each selected document is requested
-once and streamed without being saved, while the prototype records the HTTP
-status, declared headers, bytes received, elapsed time and first 16 bytes. It
-prints a labelled block with a verdict for each document and a summary line,
-and exits 0 if the index loaded and at least one document is OK.
+`--count` documents (3 to 5, default 5): the first link of each extension in
+page order, then round-robin across extensions. Each selected document is
+requested once and streamed without being saved, while the prototype records
+the HTTP status, declared headers, bytes received, elapsed time and first 16
+bytes. It prints a labelled block with a verdict for each document and a
+summary, and exits 0 if the index loaded and at least one document is OK.
 
-Run command, from the repository root:
+Run command, from the repository root (the same as the starter code's):
 
 ```sh
-uv run python -m policy_scraper.prototype
+uv run --with-requirements requirements.txt scraper.py
 ```
 
-Without uv, after `pip install requests beautifulsoup4` in a venv:
+Without uv, in a venv:
 
 ```sh
-python src/policy_scraper/prototype.py
+pip install -r requirements.txt
+python scraper.py
 ```
 
 ## 2. Design choices
 
+- **Built on the starter code:** the starter's `fetch()`, request limits
+  (`MAX_REQUESTS`, `TIMEOUT_SECONDS`, `DELAY_SECONDS`), `extract_links()`,
+  positional start URL, `requirements.txt` and run command are kept. Its TODOs
+  are filled in by `is_policy_link()`, `describe_download()` and the selection
+  in `main()`.
 - **Same-host and extension filter:** a link is kept only if its hostname
   equals that of the index page's final URL and its percent-decoded path, with
   the query string ignored, ends in one of the nine extensions. On the live
-  page 216 of 413 anchors qualified and 1 off-host document link was skipped.
+  page 216 of 413 links qualified and 1 off-host document link was skipped.
 - **One-per-type selection:** taking the first link of each extension before
   any repeats meant the 5 downloads covered every extension present (pdf, doc,
   docx, pptx, rtf), even though doc makes up 96 of the 216 links.
 - **Streaming without saving:** bodies are read in 64 KiB chunks, only the
   first 16 bytes and a byte count are kept, and reading stops past 50 MB.
   Nothing is written to disk.
-- **20-request budget including redirect hops:** redirects are followed by
-  hand (`allow_redirects=False`, at most 5 per URL) so that every hop is
-  counted. There is a 1 s pause between requests, and the run stops before a
-  21st request. The live run used 6 requests.
+- **20-request budget including redirect hops:** the starter's `fetch()`
+  counts one request per call but lets `requests` follow redirects unseen.
+  `fetch_with_redirects()` instead calls `fetch()` once per hop with
+  `allow_redirects=False` (at most 5 per URL), so every hop is counted. There
+  is a 1 s pause between requests, and the run stops before a 21st request.
+  Each live run used 6 requests.
 - **Signature checks:** `%PDF` = PDF; `PK\x03\x04` = ZIP (docx, pptx, xlsx,
   odt); `D0 CF 11 E0 A1 B1 1A E1` = OLE2 (doc, ppt, xls); `{\rtf` = RTF. The
   check also detects HTML bodies. The brief's PK/%PDF hint alone would flag
@@ -62,8 +74,8 @@ python src/policy_scraper/prototype.py
 | 4 | fraud-and-corruption-training.pptx | 200 | application/vnd.openxmlformats-officedocument.presentationml.presentation | 4,298,871 | `50 4b 03 04 14 00 06 00` (`PK..`) | OK |
 | 5 | fees-payment-and-refund-of-tuition-fees-for-domestic-postgraduate-students-policy.rtf | 200 | application/rtf | 207,353 | `7b 5c 72 74 66 31 5c 61` (`{\rtf1\a`) | OK |
 
-The full output, with all 16 bytes and the elapsed times (0.219 to 0.929 s),
-is in `scratch/live-run.txt`.
+Elapsed times in this run were 0.068 to 0.485 s per document. The README's
+"Example output" section shows the run's output for documents 1 and 2 in full.
 
 All five documents, one per extension present, returned 200. Each had a byte
 count equal to its Content-Length and the expected signature. The run used 6
@@ -94,9 +106,9 @@ series.
   comparison is skipped.
 - **A009** A document does not need to be read past 50 MB to be assessed;
   anything larger gets the `SIZE CAP` verdict.
-- **A010** The defaults are acceptable load on the site: 5 documents, a 1 s
-  pause between requests, a 10 s timeout per request and at most 20 requests
-  per run.
+- **A010** The starter's limits are acceptable load on the site: a 1 s pause
+  between requests, a 10 s timeout per request and at most 20 requests per
+  run, with 5 documents by default.
 
 ## 5. Limitations
 
@@ -105,12 +117,12 @@ series.
    - Recon found four PDFs whose URL path has no extension: three SharePoint
      `AllItems.aspx?id=…/….pdf` links and one Outlook safelinks wrapper around
      a SharePoint `:b:` (PDF) link. They are neither downloaded nor reported;
-     the run's "Skipped, other host" count is 1, not 5.
+     the run reports 1 skipped off-host link, not 5.
    - In the other direction, any same-host path ending in `.pdf` and so on is
      listed as a document unchecked. Only the 5 downloaded (of 216) were
      verified, and a misleading link is caught only if it happens to be
      downloaded, as `LOOKS LIKE HTML` or `SIGNATURE MISMATCH`. None was seen
-     in the run.
+     in either run.
 2. **The signature check is shallow.** Only the first 16 bytes are examined.
    - Corruption after the header goes undetected, so the five OK verdicts rest
      on the header and the byte count alone.
@@ -123,20 +135,20 @@ series.
      first 14 of 16 bytes (`50 4b 03 04 14 00 06 00 08 00 00 00 21 00`), so
      the header cannot tell a docx from a pptx, or from a plain .zip.
 3. **The same-host rule drops documents hosted elsewhere.** The run skipped 1
-   off-host document: `Fitness-to-Study.doc` on www.uwa.edu.au, linked 3
+   off-host document: `Fitness-to-Study.doc` on `www.uwa.edu.au`, linked 3
    times. The index also links a same-host `fitness-to-study.pdf`. The
    SharePoint PDFs in point 1 are off-host as well.
 4. **There are no retries, no backoff and no Retry-After handling.** Each URL
    gets one attempt. A requests exception becomes `FAILED (…)`, and a 429 or
    503 becomes `HTTP 429` or `HTTP 503`, without reading Retry-After. The
-   pause is a fixed 1 s whatever the server returns. The live run had only
+   pause is a fixed 1 s whatever the server returns. The live runs had only
    200 responses, so none of this was exercised.
 5. **De-duplication treats case variants as different files.** URLs are
    compared as exact strings after the fragment is removed, so differences in
    path case, host case or percent-encoding (`%2E` versus `.`) count as
    different documents.
    - Recon found no case-folded duplicates among the 216 same-host links, so
-     the run was unaffected.
+     the runs were unaffected.
    - The site does spell the same path both ways in its links, though:
      same-host links use `/project/uwa/uwa/policy-library/…` and the off-host
      Fitness-to-Study link uses `/Project/UWA/UWA/Policy-Library/…`. Whether
@@ -150,8 +162,8 @@ series.
 
 ## 6. Handover for the Task 2, 3 and 4 owners
 
-1. **Local server:** run `uv run python -m policy_scraper.prototype --start-url http://localhost:3000 --delay 0`. Documents must be linked on the same hostname (the port is ignored), and `--list` shows what was found without downloading anything.
-2. **Functions that take a session:** `open_url`, `fetch_index` and `download_document` take `(session, url, budget, timeout)`, and `run(session, args)` runs the whole flow. Only `main()` creates the real `requests.Session`, so a test can pass a session wired to responses, requests-mock or a custom adapter.
-3. **Network-free parts:** `doc_extension`, `extract_doc_links`, `select_documents`, `classify_signature`, `verdict` and `format_head` are pure. `RequestBudget(limit, delay)` counts requests and raises `BudgetExhausted` past the limit. The limits are module constants (`MAX_REQUESTS`, `MAX_REDIRECTS`, `SIZE_CAP`, `HEAD_SIZE`).
-4. **Redirects, off-site links and mismatches on the live site:** no redirects were seen (the index answered 200 directly, and 6 requests served 6 URLs). The off-site document links are one .doc on www.uwa.edu.au plus PDFs hidden in SharePoint and safelinks query strings. There were no signature mismatches in the 5 documents checked, leaving 211 same-host documents unchecked.
-5. **Speed:** documents took 0.22 to 0.93 s, the largest being the 4,298,871-byte .pptx at 0.929 s. Nothing came near the 10 s timeout, so the slow-response, `FAILED`, `HTTP <code>` and `INCOMPLETE` paths were not exercised live and need test doubles.
+1. **Local server:** run `uv run --with-requirements requirements.txt scraper.py http://localhost:3000/`. Documents must be linked on the same hostname (the port is ignored), and `--list` shows what was found without downloading anything.
+2. **Functions that take a session:** `fetch(session, url, **kwargs)`, `fetch_with_redirects(session, url, **kwargs)` and `describe_download(session, url)`. Only `main()` creates the real `requests.Session`, so a test can pass a session wired to responses, requests-mock or a custom adapter. The request count is the module global `_request_count`, so reset it to 0 between tests.
+3. **Network-free parts:** `doc_extension`, `is_policy_link`, `extract_links`, `split_by_host`, `select_documents`, `classify_signature`, `verdict` and `format_head` are pure. `fetch()` raises `RequestLimitExceeded` past `MAX_REQUESTS`. The limits are module constants (`MAX_REQUESTS`, `TIMEOUT_SECONDS`, `DELAY_SECONDS`, `MAX_REDIRECTS`, `SIZE_CAP`, `HEAD_SIZE`).
+4. **Redirects, off-site links and mismatches on the live site:** no redirects were seen (the index answered 200 directly, and in each run 6 requests served 6 URLs). The off-site document links are one .doc on `www.uwa.edu.au` plus PDFs hidden in SharePoint and safelinks query strings. There were no signature mismatches in the 5 documents checked, leaving 211 same-host documents unchecked.
+5. **Speed:** across the two runs documents took 0.068 to 0.929 s, and the 4,298,871-byte .pptx took 0.929 s and 0.485 s. Nothing came near the 10 s timeout. Redirects, the request limit, `FAILED` (too many redirects), `HTTP 404`, `LOOKS LIKE HTML` and `SIGNATURE MISMATCH` have been exercised only against a local test server, not live. Slow responses, timeouts and `INCOMPLETE` have not been exercised at all, so they need test doubles.
