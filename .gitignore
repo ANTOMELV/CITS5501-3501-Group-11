@@ -14,3 +14,8 @@ dist/
 # IDE settings stay local
 .vscode/
 .idea/
+
+# Local starter/spec repositories
+java-starter-code/
+python-starter-code/
+cits5501-project-spec-phase-2.pdf
