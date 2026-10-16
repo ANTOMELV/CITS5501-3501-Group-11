@@ -23,6 +23,11 @@ files = ["scraper.py"]
 [dependency-groups]
 dev = [
     "mypy>=2.4.0",
+    "pytest>=9.1.1",
+    "responses>=0.26.3",
     "ruff>=0.17.0",
     "types-requests>=2.33.0.20261006",
 ]
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
